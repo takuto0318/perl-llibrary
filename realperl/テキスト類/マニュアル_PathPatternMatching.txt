@@ -1,0 +1,93 @@
+パスを用いた木のマッチング処理
+
+ファイル：PathPatternMatching.pm
+パッケージ：PathPatternMatching
+サブルーチン：PathPatternMatching
+[引数1]	マッチング対象のパスパターン
+[引数2]	走査対象の木のルートへのリファレンス
+[戻り値]	PathMatchingObject型のハッシュ(のリストへのリファレンス。詳細は下記)
+
+・PathMatchingObject
+キー{ tail }
+	…パスがマッチングした個所の末端ノード。例としてパス「A > B」にマッチングした場合に該当する「B」ノード
+キー{ place }
+	…マッチング時に取得されるプレース
+
+・木のパターンで用いる記号
+
+>	…親子関係。「A > B」とすると、BはAの子供となる
+-	…サブツリーの重複マッチングを認める(別記)
+.	…ドット。ノード名(type)を指定せず全てのノードにマッチ
+*	…アスタリスク。0回以上の繰り返し
+
+#	…サブ属性の定義
+{ }	…サブ属性のキーを定義(省略時は"val")
+##	…プレースの定義(別記)
+
+・簡易的な記述例	(現状、半角スペースは無視される)
+
+A	
+	…パス  /A にマッチ。実質的にノードAすべてにマッチ。tail は A
+A > B	
+	…パス /A /B にマッチ。tail は B
+A#nakami	
+	…パス /A にマッチ。ただし{ type => "A", val => "nakami" }のようなAである必要がある。tail は A
+A##head > B
+	…パス /A /B にマッチ。tail は B。プレースhead は A
+. 
+	…パス /(なんでも) にマッチ。木内の全ノードに無条件でマッチングしてしまう。
+. #{value}nakami
+	…パス /(なんでも) にマッチ。ただし{ type => "(なんでも)", value => "nakami" }のようなノードのみ。
+
+・入力例詳細
+
+0「入力例」
+	入力例の意味
+		マッチするパスの例	(1or2個)
+1「A > B」	
+	A / B のようなパス	
+		A / B  		N / A / B
+2「A > B | C > D」
+	…A / B または C / D	
+		N / A / B	N /C / D
+3「A#nakami」	
+	属性valの値 = nakami であるA
+		N / A　※Aのval = nakami	
+4「A#{val_name}nakami」
+	属性val_nameの値 = nakami であるA
+		N / A  　※Aのval_name = nakami	
+5「A#{val1}xx#{val2}yy」
+	属性val1の値 = xx,  val2の値 = yyであるA
+		N / A  　※Aのval1 = xxx, val2 = yyy	
+6「A > ( B | C ) > D」
+	B | C を優先結合
+		N / A / B / D	N / A / C / D
+7「A (> B > C )* > D」
+	A 後の / B / C …の繰り返しが0回以上
+		N / A / D	N / A / B / C / B / C / D
+8「A (> B | C)* > D」
+	A 後の / B または / C …の繰り返しが0回以上
+		N / A / B / D	N / A / C / B / D
+9「A > .#nakami」
+	属性valの値 = nakami かつAを親に持つノード
+		A / X 　※Xのval = nakami。Xはノード名不問	
+10「A##place_name > B」
+	place_nameを参照することでAを取得
+		※1「A > B」と同様	
+11「A#{value}xx##place1」
+	属性valueの値 = xx であるA。Aを取得可能
+		A	N > A
+
+
+・既知の問題点
+①現状、繰り返し記述内でプレースを扱えない
+	→A > B##place* 	など、そもそもプレースの値は空になる(必要な処理を書いていないため)
+	→プレース1つにつき複数個所のマッチングが起きた場合の処理が不明瞭
+	→本来なら最長一致をとるべき？
+
+②繰り返し記述が最短一致になってしまう
+
+
+
+
+
